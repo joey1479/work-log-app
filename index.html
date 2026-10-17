@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>업무 기록</title>
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --card: #ffffff;
+      --text: #1f2328;
+      --muted: #6b7280;
+      --border: #e3e5e8;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --danger: #dc2626;
+      --chip: #eef2ff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111317;
+        --card: #1b1e24;
+        --text: #e6e8eb;
+        --muted: #9aa1ab;
+        --border: #2c3038;
+        --accent: #4f8cff;
+        --accent-hover: #6b9dff;
+        --danger: #f87171;
+        --chip: #232a3b;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+      line-height: 1.5;
+    }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { font-size: 26px; margin: 0 0 4px; }
+    .sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .full { grid-column: 1 / -1; }
+    label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    input, textarea, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      font: inherit;
+      font-size: 15px;
+    }
+    input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+    textarea { resize: vertical; min-height: 70px; }
+    .time { display: flex; gap: 8px; align-items: center; }
+    .time input { width: 80px; }
+    .time span { color: var(--muted); font-size: 14px; }
+
+    .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+    button {
+      font: inherit;
+      font-size: 14px;
+      padding: 9px 18px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      cursor: pointer;
+    }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+    button.primary:hover { background: var(--accent-hover); }
+    .error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 1em; }
+
+    .toolbar {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      justify-content: space-between; align-items: center;
+      margin-bottom: 12px;
+    }
+    .toolbar h2 { font-size: 18px; margin: 0; }
+    .toolbar input { width: auto; min-width: 180px; padding: 7px 10px; font-size: 14px; }
+    .summary { color: var(--muted); font-size: 14px; margin-bottom: 12px; }
+    .summary b { color: var(--text); }
+
+    .day { margin-bottom: 18px; }
+    .day-head {
+      display: flex; justify-content: space-between;
+      font-size: 14px; font-weight: 600; color: var(--muted);
+      padding: 0 4px 6px;
+    }
+    .item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      display: flex; gap: 12px; align-items: flex-start;
+    }
+    .item-body { flex: 1; min-width: 0; }
+    .item-title { font-weight: 600; font-size: 16px; word-break: break-word; }
+    .chip {
+      display: inline-block; margin-left: 8px;
+      background: var(--chip); color: var(--accent);
+      font-size: 12px; font-weight: 600;
+      padding: 2px 8px; border-radius: 999px;
+      vertical-align: middle;
+    }
+    .memo { color: var(--muted); font-size: 14px; margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+    .item-btns { display: flex; gap: 4px; flex-shrink: 0; }
+    .item-btns button { padding: 4px 10px; font-size: 13px; }
+    .item-btns .del { color: var(--danger); }
+    .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+
+    /* 탭 */
+    .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+    .tab {
+      border: none; background: none; border-radius: 0;
+      padding: 10px 16px; font-weight: 600; color: var(--muted);
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+    .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+
+    /* 분석: 필터 */
+    .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 16px; }
+    .filters .f { display: flex; flex-direction: column; }
+    .filters label { font-size: 12px; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
+    .filters input, .filters select { width: auto; padding: 7px 10px; font-size: 14px; background: var(--card); }
+    .filters .grow { flex: 1; min-width: 160px; }
+    .filters .grow input { width: 100%; }
+    .filters button { padding: 7px 12px; }
+
+    /* 분석: 요약 수치 */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .stat { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+    .stat-label { font-size: 12px; color: var(--muted); }
+    .stat-value { font-size: 22px; font-weight: 700; margin-top: 2px; word-break: break-word; }
+    .stat-value.small { font-size: 16px; padding-top: 5px; }
+
+    /* 분석: 차트 */
+    .viz {
+      --series-1: #2a78d6;
+      --grid: #e1e0d9;
+      --axis: #c3c2b7;
+      --axis-text: #898781;
+    }
+    @media (prefers-color-scheme: dark) {
+      .viz { --series-1: #3987e5; --grid: #2c2c2a; --axis: #383835; }
+    }
+    .chart-title { font-size: 15px; font-weight: 600; margin: 0 0 2px; }
+    .chart-sub { font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+    .chart { width: 100%; position: relative; }
+    .chart svg { display: block; width: 100%; overflow: visible; }
+    .chart .bar { fill: var(--series-1); transition: opacity .12s; }
+    .chart.hovering .bar { opacity: .35; }
+    .chart.hovering .bar.on { opacity: 1; }
+    .chart .gridline { stroke: var(--grid); stroke-width: 1; }
+    .chart .baseline { stroke: var(--axis); stroke-width: 1; }
+    .chart text { fill: var(--axis-text); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .chart .hit { fill: transparent; cursor: default; }
+    .two-col { display: grid; grid-template-columns: 3fr 2fr; gap: 0 20px; }
+    @media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
+
+    .hbars { display: flex; flex-direction: column; gap: 6px; }
+    .hrow { display: grid; grid-template-columns: minmax(70px, 28%) 1fr 9.5em; gap: 10px; align-items: center; font-size: 13px; padding: 2px 0; }
+    .hrow .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hrow .track { height: 14px; }
+    .hrow .fill { height: 100%; background: var(--series-1); border-radius: 0 4px 4px 0; min-width: 2px; transition: opacity .12s; }
+    .hbars.hovering .fill { opacity: .35; }
+    .hbars.hovering .hrow.on .fill { opacity: 1; }
+    .hrow .val { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .hrow .val b { color: var(--text); font-weight: 600; }
+
+    /* 분석: 집계 표 */
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: right; font-variant-numeric: tabular-nums; }
+    th:first-child, td:first-child { text-align: left; }
+    th { font-size: 12px; color: var(--muted); font-weight: 600; cursor: pointer; user-select: none; white-space: nowrap; }
+    th:hover { color: var(--text); }
+    td:first-child { word-break: break-word; }
+    tfoot td { font-weight: 700; border-bottom: none; }
+    .table-wrap { overflow-x: auto; }
+
+    #tooltip {
+      position: fixed; pointer-events: none; z-index: 10;
+      background: var(--text); color: var(--bg);
+      font-size: 12px; line-height: 1.4; padding: 6px 9px; border-radius: 6px;
+      white-space: nowrap; opacity: 0; transition: opacity .08s;
+    }
+    #tooltip.show { opacity: 1; }
+    #tooltip b { font-size: 13px; }
+
+    @media (max-width: 560px) {
+      .two-col { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+      .item { flex-direction: column; }
+      .item-btns { align-self: flex-end; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>업무 기록</h1>
+    <p class="sub">오늘 한 일을 기록하고 한눈에 확인하세요. 기록은 이 브라우저에 저장됩니다.</p>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="log" aria-selected="true">기록</button>
+      <button class="tab" role="tab" data-tab="analysis" aria-selected="false">분석</button>
+    </div>
+
+    <section id="panel-analysis" class="viz" hidden>
+      <div class="filters">
+        <div class="f">
+          <label for="f-period">기간</label>
+          <select id="f-period">
+            <option value="all">전체</option>
+            <option value="today">오늘</option>
+            <option value="7">최근 7일</option>
+            <option value="30" selected>최근 30일</option>
+            <option value="90">최근 90일</option>
+            <option value="thisMonth">이번 달</option>
+            <option value="lastMonth">지난 달</option>
+            <option value="custom">직접 지정</option>
+          </select>
+        </div>
+        <div class="f" id="f-custom" hidden>
+          <label>시작 ~ 종료</label>
+          <div style="display:flex; gap:6px; align-items:center">
+            <input type="date" id="f-from" aria-label="시작일" />
+            <span>~</span>
+            <input type="date" id="f-to" aria-label="종료일" />
+          </div>
+        </div>
+        <div class="f">
+          <label for="f-task">업무명</label>
+          <select id="f-task"><option value="">전체 업무</option></select>
+        </div>
+        <div class="f grow">
+          <label for="f-keyword">키워드</label>
+          <input type="search" id="f-keyword" placeholder="업무명·메모에 포함된 단어" />
+        </div>
+        <button type="button" id="f-reset">초기화</button>
+      </div>
+
+      <div class="stats" id="stats"></div>
+
+      <div id="analysis-body">
+        <div class="card">
+          <p class="chart-title">기간별 소요시간</p>
+          <p class="chart-sub" id="trend-sub"></p>
+          <div class="chart" id="chart-trend"></div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <p class="chart-title">업무별 소요시간</p>
+            <p class="chart-sub">합계 기준 상위 8개, 나머지는 '기타'</p>
+            <div class="hbars" id="chart-task"></div>
+          </div>
+          <div class="card">
+            <p class="chart-title">요일별 소요시간</p>
+            <p class="chart-sub">선택한 기간의 요일별 합계</p>
+            <div class="chart" id="chart-weekday"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="chart-title">업무별 집계</p>
+          <p class="chart-sub">열 제목을 누르면 정렬됩니다</p>
+          <div class="table-wrap"><table id="agg-table"></table></div>
+        </div>
+      </div>
+      <div class="empty" id="analysis-empty" hidden>조건에 맞는 기록이 없습니다.</div>
+    </section>
+
+    <section id="panel-log">
+    <form id="form" class="card" autocomplete="off">
+      <div class="grid">
+        <div>
+          <label for="date">날짜</label>
+          <input type="date" id="date" required />
+        </div>
+        <div>
+          <label>소요시간</label>
+          <div class="time">
+            <input type="number" id="hours" min="0" max="24" placeholder="0" aria-label="시간" />
+            <span>시간</span>
+            <input type="number" id="minutes" min="0" max="59" step="5" placeholder="0" aria-label="분" />
+            <span>분</span>
+          </div>
+        </div>
+        <div class="full">
+          <label for="title">업무명</label>
+          <input type="text" id="title" placeholder="예: 주간 보고서 작성" maxlength="100" />
+        </div>
+        <div class="full">
+          <label for="memo">메모</label>
+          <textarea id="memo" placeholder="세부 내용, 이슈, 다음 할 일 등"></textarea>
+        </div>
+      </div>
+      <div class="error" id="error"></div>
+      <div class="actions">
+        <button type="button" id="cancel" hidden>취소</button>
+        <button type="submit" class="primary" id="submit">추가</button>
+      </div>
+    </form>
+
+    <div class="toolbar">
+      <h2>기록 목록</h2>
+      <input type="search" id="search" placeholder="업무명·메모 검색" />
+    </div>
+    <div class="summary" id="summary"></div>
+    <div id="list"></div>
+    </section>
+  </div>
+  <div id="tooltip" role="tooltip"></div>
+
+  <script>
+    const STORAGE_KEY = 'work-log-entries';
+    const $ = (id) => document.getElementById(id);
+
+    let entries = load();
+    let editingId = null;
+
+    function load() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function save() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      } catch {
+        $('error').textContent = '저장에 실패했습니다. 브라우저 저장소 설정을 확인하세요.';
+      }
+    }
+
+    function today() {
+      const d = new Date();
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 10);
+    }
+
+    function formatDuration(min) {
+      const h = Math.floor(min / 60);
+      const m = min % 60;
+      if (h && m) return `${h}시간 ${m}분`;
+      if (h) return `${h}시간`;
+      return `${m}분`;
+    }
+
+    function formatDate(iso) {
+      const d = new Date(iso + 'T00:00:00');
+      const days = ['일', '월', '화', '수', '목', '금', '토'];
+      return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function resetForm() {
+      editingId = null;
+      $('form').reset();
+      $('date').value = today();
+      $('submit').textContent = '추가';
+      $('cancel').hidden = true;
+      $('error').textContent = '';
+    }
+
+    $('form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const date = $('date').value;
+      const title = $('title').value.trim();
+      const hours = parseInt($('hours').value, 10) || 0;
+      const minutes = parseInt($('minutes').value, 10) || 0;
+      const memo = $('memo').value.trim();
+      const duration = hours * 60 + minutes;
+
+      if (!date) return ($('error').textContent = '날짜를 선택하세요.');
+      if (!title) return ($('error').textContent = '업무명을 입력하세요.');
+      if (duration <= 0) return ($('error').textContent = '소요시간을 입력하세요.');
+      if (minutes > 59 || hours < 0 || minutes < 0) return ($('error').textContent = '소요시간을 올바르게 입력하세요.');
+
+      if (editingId) {
+        const entry = entries.find((x) => x.id === editingId);
+        Object.assign(entry, { date, title, duration, memo });
+      } else {
+        entries.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date, title, duration, memo, createdAt: Date.now() });
+      }
+      save();
+      resetForm();
+      render();
+    });
+
+    $('cancel').addEventListener('click', resetForm);
+    $('search').addEventListener('input', render);
+
+    $('list').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-id]');
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const entry = entries.find((x) => x.id === id);
+      if (!entry) return;
+
+      if (btn.dataset.action === 'delete') {
+        if (!confirm(`'${entry.title}' 기록을 삭제할까요?`)) return;
+        entries = entries.filter((x) => x.id !== id);
+        if (editingId === id) resetForm();
+        save();
+        render();
+      } else if (btn.dataset.action === 'edit') {
+        editingId = id;
+        $('date').value = entry.date;
+        $('title').value = entry.title;
+        $('hours').value = Math.floor(entry.duration / 60) || '';
+        $('minutes').value = entry.duration % 60 || '';
+        $('memo').value = entry.memo;
+        $('submit').textContent = '수정 저장';
+        $('cancel').hidden = false;
+        $('error').textContent = '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        $('title').focus();
+      }
+    });
+
+    function render() {
+      refreshTaskOptions();
+      renderAnalysis();
+      const q =$('search').value.trim().toLowerCase();
+      const filtered = entries
+        .filter((x) => !q || x.title.toLowerCase().includes(q) || x.memo.toLowerCase().includes(q))
+        .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
+
+      const total = filtered.reduce((sum, x) => sum + x.duration, 0);
+      $('summary').innerHTML = filtered.length
+        ? `총 <b>${filtered.length}건</b> · 합계 <b>${formatDuration(total)}</b>`
+        : '';
+
+      if (!filtered.length) {
+        $('list').innerHTML = `<div class="empty">${q ? '검색 결과가 없습니다.' : '아직 기록이 없습니다. 위에서 첫 업무를 추가해 보세요.'}</div>`;
+        return;
+      }
+
+      const groups = {};
+      for (const x of filtered) (groups[x.date] ||= []).push(x);
+
+      $('list').innerHTML = Object.entries(groups).map(([date, items]) => {
+        const dayTotal = items.reduce((s, x) => s + x.duration, 0);
+        return `
+          <div class="day">
+            <div class="day-head"><span>${formatDate(date)}</span><span>${formatDuration(dayTotal)}</span></div>
+            ${items.map((x) => `
+              <div class="item">
+                <div class="item-body">
+                  <div class="item-title">${escapeHtml(x.title)}<span class="chip">${formatDuration(x.duration)}</span></div>
+                  ${x.memo ? `<div class="memo">${escapeHtml(x.memo)}</div>` : ''}
+                </div>
+                <div class="item-btns">
+                  <button data-id="${x.id}" data-action="edit">수정</button>
+                  <button data-id="${x.id}" data-action="delete" class="del">삭제</button>
+                </div>
+              </div>`).join('')}
+          </div>`;
+      }).join('');
+    }
+
+    /* ---------- 날짜 도우미 ---------- */
+    function toISO(d) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    function parseISO(iso) { return new Date(iso + 'T00:00:00'); }
+    function addDays(iso, n) { const d = parseISO(iso); d.setDate(d.getDate() + n); return toISO(d); }
+    function daysBetween(a, b) { return Math.round((parseISO(b) - parseISO(a)) / 86400000); }
+    function shortDate(iso) { const d = parseISO(iso); return `${d.getMonth() + 1}/${d.getDate()}`; }
+    const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
+    const weekdayIdx = (iso) => (parseISO(iso).getDay() + 6) % 7; // 월=0
+    function hoursText(min) { return formatDuration(Math.round(min)); }
+
+    /* ---------- 탭 ---------- */
+    let currentTab = 'log';
+    function showTab(name) {
+      currentTab = name;
+      document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === name)));
+      $('panel-log').hidden = name !== 'log';
+      $('panel-analysis').hidden = name !== 'analysis';
+      try { localStorage.setItem('work-log-tab', name); } catch {}
+      if (name === 'analysis') renderAnalysis();
+    }
+    document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => showTab(t.dataset.tab)));
+
+    /* ---------- 필터 ---------- */
+    function getRange() {
+      const p = $('f-period').value;
+      const t = today();
+      if (p === 'all') return null;
+      if (p === 'today') return [t, t];
+      if (p === 'thisMonth') return [t.slice(0, 8) + '01', t];
+      if (p === 'lastMonth') {
+        const d = parseISO(t.slice(0, 8) + '01');
+        const end = addDays(toISO(d), -1);
+        return [end.slice(0, 8) + '01', end];
+      }
+      if (p === 'custom') {
+        const from = $('f-from').value, to = $('f-to').value;
+        if (!from && !to) return null;
+        return [from || '0000-01-01', to || '9999-12-31'];
+      }
+      return [addDays(t, -(parseInt(p, 10) - 1)), t];
+    }
+
+    function getFiltered() {
+      const range = getRange();
+      const task = $('f-task').value;
+      const q = $('f-keyword').value.trim().toLowerCase();
+      return {
+        range,
+        rows: entries.filter((x) =>
+          (!range || (x.date >= range[0] && x.date <= range[1])) &&
+          (!task || x.title === task) &&
+          (!q || x.title.toLowerCase().includes(q) || x.memo.toLowerCase().includes(q))
+        ),
+      };
+    }
+
+    function refreshTaskOptions() {
+      const sel = $('f-task');
+      const cur = sel.value;
+      const titles = [...new Set(entries.map((x) => x.title))].sort((a, b) => a.localeCompare(b, 'ko'));
+      sel.innerHTML = '<option value="">전체 업무</option>' +
+        titles.map((t) => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+      sel.value = titles.includes(cur) ? cur : '';
+    }
+
+    $('f-period').addEventListener('change', () => {
+      $('f-custom').hidden = $('f-period').value !== 'custom';
+      renderAnalysis();
+    });
+    ['f-from', 'f-to', 'f-task'].forEach((id) => $(id).addEventListener('change', renderAnalysis));
+    $('f-keyword').addEventListener('input', renderAnalysis);
+    $('f-reset').addEventListener('click', () => {
+      $('f-period').value = '30';
+      $('f-custom').hidden = true;
+      $('f-from').value = $('f-to').value = $('f-keyword').value = $('f-task').value = '';
+      renderAnalysis();
+    });
+
+    /* ---------- 집계 ---------- */
+    function aggregateByTask(rows) {
+      const map = new Map();
+      for (const x of rows) {
+        const a = map.get(x.title) || { title: x.title, count: 0, total: 0, days: new Set(), last: '' };
+        a.count++; a.total += x.duration; a.days.add(x.date);
+        if (x.date > a.last) a.last = x.date;
+        map.set(x.title, a);
+      }
+      return [...map.values()].map((a) => ({ ...a, days: a.days.size, avg: a.total / a.count }));
+    }
+
+    // 기간 길이에 따라 일/주/월 단위로 묶고, 기록이 없는 구간은 0으로 채움
+    function aggregateByTime(rows, range) {
+      if (!rows.length) return { unit: '일', buckets: [] };
+      const dates = rows.map((x) => x.date).sort();
+      let start = range ? range[0] : dates[0];
+      let end = range ? range[1] : dates[dates.length - 1];
+      if (start < dates[0] && (!range || $('f-period').value === 'custom')) start = dates[0];
+      if (end > dates[dates.length - 1] && (!range || $('f-period').value === 'custom')) end = dates[dates.length - 1];
+      const span = daysBetween(start, end) + 1;
+
+      let unit, keyOf, next, labelOf, tipOf;
+      if (span <= 31) {
+        unit = '일';
+        keyOf = (iso) => iso;
+        next = (k) => addDays(k, 1);
+        labelOf = shortDate;
+        tipOf = formatDate;
+      } else if (span <= 180) {
+        unit = '주';
+        keyOf = (iso) => addDays(iso, -weekdayIdx(iso));
+        next = (k) => addDays(k, 7);
+        labelOf = shortDate;
+        tipOf = (k) => `${shortDate(k)} ~ ${shortDate(addDays(k, 6))} 주`;
+      } else {
+        unit = '월';
+        keyOf = (iso) => iso.slice(0, 7) + '-01';
+        next = (k) => { const d = parseISO(k); d.setMonth(d.getMonth() + 1); return toISO(d); };
+        labelOf = (k) => `${k.slice(2, 4)}.${parseInt(k.slice(5, 7), 10)}`;
+        tipOf = (k) => `${k.slice(0, 4)}년 ${parseInt(k.slice(5, 7), 10)}월`;
+      }
+
+      const sums = new Map();
+      for (const x of rows) { const k = keyOf(x.date); sums.set(k, (sums.get(k) || 0) + x.duration); }
+      const buckets = [];
+      for (let k = keyOf(start); k <= end; k = next(k)) {
+        const v = sums.get(k) || 0;
+        buckets.push({ label: labelOf(k), value: v, tip: `${tipOf(k)}<br><b>${v ? hoursText(v) : '기록 없음'}</b>` });
+      }
+      return { unit, buckets };
+    }
+
+    /* ---------- 차트 ---------- */
+    function niceStep(maxHours, targetTicks) {
+      const raw = maxHours / targetTicks;
+      const steps = [0.25, 0.5, 1, 2, 3, 4, 5, 10, 20, 25, 50, 100, 200, 500, 1000];
+      return steps.find((s) => s >= raw) || Math.ceil(raw / 1000) * 1000;
+    }
+
+    function columnChart(el, data, height = 220) {
+      const W = Math.max(el.clientWidth, 260);
+      const m = { top: 10, right: 4, bottom: 24, left: 38 };
+      const iw = W - m.left - m.right, ih = height - m.top - m.bottom;
+      const maxH = Math.max(...data.map((d) => d.value), 1) / 60;
+      const step = niceStep(maxH, 4);
+      const top = Math.ceil(maxH / step) * step;
+      const y = (min) => m.top + ih - (min / 60 / top) * ih;
+      const slot = iw / data.length;
+      const gap = Math.min(2 + slot * 0.25, 12);
+      const bw = Math.max(slot - gap, 1);
+      const r = Math.min(4, bw / 2);
+      const labelEvery = Math.ceil(data.length / Math.max(Math.floor(iw / 34), 1));
+
+      let s = `<svg viewBox="0 0 ${W} ${height}" height="${height}" role="img" aria-label="소요시간 막대 차트">`;
+      for (let v = 0; v <= top + 1e-9; v += step) {
+        const yy = y(v * 60);
+        if (v > 0) s += `<line class="gridline" x1="${m.left}" x2="${W - m.right}" y1="${yy}" y2="${yy}"/>`;
+        s += `<text x="${m.left - 6}" y="${yy + 4}" text-anchor="end">${+v.toFixed(2)}h</text>`;
+      }
+      data.forEach((d, i) => {
+        const x = m.left + i * slot + gap / 2;
+        const yy = y(d.value), h = m.top + ih - yy;
+        if (h > 0) {
+          const rr = Math.min(r, h);
+          s += `<path class="bar" data-i="${i}" d="M${x},${m.top + ih} V${yy + rr} Q${x},${yy} ${x + rr},${yy} H${x + bw - rr} Q${x + bw},${yy} ${x + bw},${yy + rr} V${m.top + ih} Z"/>`;
+        }
+        s += `<rect class="hit" data-i="${i}" data-tip="${d.tip.replace(/"/g, '&quot;')}" x="${m.left + i * slot}" y="${m.top}" width="${slot}" height="${ih}"/>`;
+        if (i % labelEvery === 0) s += `<text x="${x + bw / 2}" y="${height - 6}" text-anchor="middle">${d.label}</text>`;
+      });
+      s += `<line class="baseline" x1="${m.left}" x2="${W - m.right}" y1="${m.top + ih}" y2="${m.top + ih}"/></svg>`;
+      el.innerHTML = s;
+    }
+
+    function taskBars(el, agg, grandTotal) {
+      const sorted = [...agg].sort((a, b) => b.total - a.total);
+      let rows = sorted.slice(0, 8).map((a) => ({ name: a.title, total: a.total, count: a.count }));
+      if (sorted.length > 8) {
+        const rest = sorted.slice(8);
+        rows.push({ name: `기타 (${rest.length}개)`, total: rest.reduce((s, a) => s + a.total, 0), count: rest.reduce((s, a) => s + a.count, 0) });
+      }
+      const max = Math.max(...rows.map((r) => r.total), 1);
+      el.innerHTML = rows.map((r, i) => {
+        const pct = Math.round((r.total / grandTotal) * 100);
+        const tip = `${escapeHtml(r.name)}<br><b>${hoursText(r.total)}</b> · ${r.count}건 · ${pct}%`;
+        return `<div class="hrow" data-i="${i}" data-tip="${tip.replace(/"/g, '&quot;')}">
+          <span class="name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</span>
+          <div class="track"><div class="fill" style="width:${(r.total / max) * 100}%"></div></div>
+          <span class="val"><b>${hoursText(r.total)}</b> ${pct}%</span>
+        </div>`;
+      }).join('');
+    }
+
+    let tableSort = { key: 'total', dir: -1 };
+    function aggTable(el, agg, grandTotal) {
+      const cols = [
+        ['title', '업무명'], ['count', '건수'], ['days', '일수'],
+        ['total', '합계'], ['avg', '평균/건'], ['share', '비율'], ['last', '최근'],
+      ];
+      const rows = agg.map((a) => ({ ...a, share: a.total / grandTotal }));
+      const { key, dir } = tableSort;
+      rows.sort((a, b) => (typeof a[key] === 'string' ? a[key].localeCompare(b[key], 'ko') : a[key] - b[key]) * dir);
+      const totalCount = rows.reduce((s, a) => s + a.count, 0);
+      el.innerHTML = `
+        <thead><tr>${cols.map(([k, l]) => `<th data-key="${k}">${l}${k === key ? (dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('')}</tr></thead>
+        <tbody>${rows.map((a) => `<tr>
+          <td>${escapeHtml(a.title)}</td><td>${a.count}</td><td>${a.days}</td>
+          <td>${hoursText(a.total)}</td><td>${hoursText(a.avg)}</td>
+          <td>${(a.share * 100).toFixed(1)}%</td><td>${shortDate(a.last)}</td></tr>`).join('')}</tbody>
+        <tfoot><tr><td>합계</td><td>${totalCount}</td><td></td><td>${hoursText(grandTotal)}</td>
+          <td>${hoursText(grandTotal / totalCount)}</td><td>100%</td><td></td></tr></tfoot>`;
+    }
+    $('agg-table').addEventListener('click', (e) => {
+      const th = e.target.closest('th[data-key]');
+      if (!th) return;
+      const k = th.dataset.key;
+      tableSort = tableSort.key === k ? { key: k, dir: -tableSort.dir } : { key: k, dir: k === 'title' ? 1 : -1 };
+      renderAnalysis();
+    });
+
+    function renderAnalysis() {
+      if (currentTab !== 'analysis') return;
+      const { rows, range } = getFiltered();
+      const total = rows.reduce((s, x) => s + x.duration, 0);
+      const days = new Set(rows.map((x) => x.date)).size;
+      const agg = aggregateByTask(rows);
+      const top = [...agg].sort((a, b) => b.total - a.total)[0];
+
+      $('stats').innerHTML = [
+        ['총 소요시간', hoursText(total)],
+        ['기록 건수', `${rows.length}건`],
+        ['기록한 날', `${days}일`],
+        ['하루 평균', days ? hoursText(total / days) : '-'],
+        ['가장 많이 한 업무', top ? escapeHtml(top.title) : '-', true],
+      ].map(([l, v, small]) => `<div class="stat"><div class="stat-label">${l}</div><div class="stat-value${small ? ' small' : ''}">${v}</div></div>`).join('');
+
+      $('analysis-body').hidden = !rows.length;
+      $('analysis-empty').hidden = !!rows.length;
+      if (!rows.length) return;
+
+      const { unit, buckets } = aggregateByTime(rows, range);
+      $('trend-sub').textContent = `${unit} 단위 합계 · 막대에 마우스를 올리면 상세 값`;
+      columnChart($('chart-trend'), buckets);
+
+      const wk = Array(7).fill(0), wkCount = Array(7).fill(0);
+      for (const x of rows) { wk[weekdayIdx(x.date)] += x.duration; wkCount[weekdayIdx(x.date)]++; }
+      columnChart($('chart-weekday'), WEEKDAYS.map((d, i) => ({
+        label: d, value: wk[i], tip: `${d}요일<br><b>${wk[i] ? hoursText(wk[i]) : '기록 없음'}</b>${wkCount[i] ? ` · ${wkCount[i]}건` : ''}`,
+      })), 180);
+
+      taskBars($('chart-task'), agg, total);
+      aggTable($('agg-table'), agg, total);
+    }
+
+    /* ---------- 툴팁 & 호버 강조 ---------- */
+    const tooltip = $('tooltip');
+    document.addEventListener('mousemove', (e) => {
+      const t = e.target.closest('[data-tip]');
+      document.querySelectorAll('.hovering').forEach((c) => c.classList.remove('hovering'));
+      document.querySelectorAll('.on').forEach((b) => b.classList.remove('on'));
+      if (!t) return tooltip.classList.remove('show');
+      tooltip.innerHTML = t.dataset.tip;
+      tooltip.classList.add('show');
+      const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+      let left = e.clientX + 12, topPos = e.clientY - th - 10;
+      if (left + tw > window.innerWidth - 8) left = e.clientX - tw - 12;
+      if (topPos < 8) topPos = e.clientY + 16;
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = topPos + 'px';
+      const host = t.closest('.chart, .hbars');
+      if (host) {
+        host.classList.add('hovering');
+        host.querySelectorAll(`.bar[data-i="${t.dataset.i}"]`).forEach((b) => b.classList.add('on'));
+        if (t.classList.contains('hrow')) t.classList.add('on');
+      }
+    });
+
+    let resizeTimer;
+    window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(renderAnalysis, 150); });
+
+    resetForm();
+    render();
+    try { if (localStorage.getItem('work-log-tab') === 'analysis') showTab('analysis'); } catch {}
+  </script>
+</body>
+</html>
